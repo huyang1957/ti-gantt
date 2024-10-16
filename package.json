@@ -1,0 +1,23 @@
+{
+  "name": "tigantt",
+  "version": "1.0.0",
+  "description": "一个基于Vue-gantt的甘特图组件",
+  "main": "install.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/huyang1957/ti-gantt.git"
+  },
+  "keywords": [
+    "vue",
+    "gantt"
+  ],
+  "author": "Tiger Hu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/huyang1957/ti-gantt/issues"
+  },
+  "homepage": "https://github.com/huyang1957/ti-gantt#readme"
+}
