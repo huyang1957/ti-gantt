@@ -20,8 +20,5 @@
   "bugs": {
     "url": "https://github.com/huyang1957/ti-gantt/issues"
   },
-  "homepage": "https://github.com/huyang1957/ti-gantt#readme",
-  "devDependencies": {
-    "vite": "^5.4.9"
-  }
+  "homepage": "https://github.com/huyang1957/ti-gantt#readme"
 }
