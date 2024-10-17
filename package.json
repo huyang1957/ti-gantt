@@ -1,10 +1,10 @@
 {
   "name": "tigantt",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "一个基于Vue-gantt的甘特图组件",
   "main": "install.js",
   "scripts": {
-    "dev": "vue-cli-service server --open",
+    "dev": "vite",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,5 +20,15 @@
   "bugs": {
     "url": "https://github.com/huyang1957/ti-gantt/issues"
   },
-  "homepage": "https://github.com/huyang1957/ti-gantt#readme"
+  "homepage": "https://github.com/huyang1957/ti-gantt#readme",
+  "devDependencies": {
+    "sass-embedded": "^1.80.0",
+    "vite": "^5.4.9"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "axios": "^1.7.7",
+    "element-plus": "^2.8.5",
+    "vue": "^3.5.12"
+  }
 }

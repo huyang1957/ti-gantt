@@ -1,4 +1,4 @@
-import TiBtn from './components/TiBtn.vue'
+import TiBtn from './src/components/TiBtn.vue'
 
 export default {
 	install:(app,options)=>{
