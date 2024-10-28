@@ -3,6 +3,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.svn
 
 # Editor directories and files
 .idea
