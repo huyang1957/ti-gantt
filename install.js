@@ -1,7 +1,7 @@
-import TiBtn from './src/components/TiBtn.vue'
+import TiGantt from './src/index.vue'
 
 export default {
 	install:(app,options)=>{
-		app.component('TiBtn',TiBtn)
+		app.component('TiGantt',TiGantt)
 	}
 }
