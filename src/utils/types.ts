@@ -1,4 +1,4 @@
-import EventEmitter from '@/utils/event-emitter'
+import EventEmitter from './event-emitter.ts'
 
 export interface BaseItem {
   id: string

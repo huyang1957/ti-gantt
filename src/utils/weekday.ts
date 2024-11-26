@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { cachedAsync } from '@/utils'
+import { cachedAsync } from './index.ts'
 
 const rollToolsApiHost = 'https://www.mxnzp.com/api'
 

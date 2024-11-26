@@ -6,7 +6,7 @@
 <script lang="ts">
 import { PropType } from 'vue'
 import GanttNode from './gantt-node.vue'
-import { GanttLayoutData, Bus } from '@/utils/types'
+import { GanttLayoutData, Bus } from '../utils/types.ts'
 
 export default {
   name: 'GanttLayout',

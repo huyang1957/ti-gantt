@@ -1,7 +1,7 @@
 <template>
   <div class="gantt-leaf" @mousedown.stop="$emit('drag-start', $event)" @click.stop="$emit('focus-start')"
     @mouseover.stop="$emit('hover-start')" @mouseout.stop="$emit('hover-end')">
-    <el-tooltip content="任务名称" placement="top">
+    <el-tooltip content="任务名称" placement="top" effect="light" :show-after="1000">
       <template #content><span v-html="data.tip.content"></span></template>
       <gantt-progress :progress="data.progress" :colors="data.colors" :tip="data.tip" />
     </el-tooltip>
@@ -12,7 +12,7 @@
 </template>
 <script lang="ts">
 import { PropType } from 'vue'
-import { GanttLayoutLeaf } from '@/utils/types'
+import { GanttLayoutLeaf } from '../utils/types.ts'
 import GanttProgress from './gantt-progress.vue'
 
 export default {

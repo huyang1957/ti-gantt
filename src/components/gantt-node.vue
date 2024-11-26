@@ -16,8 +16,8 @@ import { VueConstructor } from 'vue'
 import GanttGroup from './gantt-group.vue'
 import GanttLeaf from './gantt-leaf.vue'
 import GanttMilestone from './gantt-milestone.vue'
-import { GanttLayoutNode, Bus, ColUnit } from '@/utils/types'
-import { isGroup, isMilestone } from '@/utils'
+import { GanttLayoutNode, Bus, ColUnit } from '../utils/types.ts'
+import { isGroup, isMilestone } from '../utils/index.ts'
 
 interface Style {
   transform: string

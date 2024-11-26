@@ -27,7 +27,7 @@
                 milestone: d in milestoneMap,
                 done: milestoneMap[d] && milestoneMap[d].done,
               },
-            ]">
+            ]" @drop="onDrop(d)" @dragover="onDragOver($event, d)">
               <span :title="d">{{ getDayContent(d) }}</span>
               <template v-if="dayMode">
                 <span v-if="isToday(d)" class="desc">今天</span>
@@ -67,7 +67,7 @@
 <script lang="ts">
 import { createApp, PropType } from 'vue'
 import * as Vue from 'vue'
-import _uniq from 'lodash.uniq'
+import { uniq } from 'lodash'
 import GanttLayout from './gantt-layout.vue'
 import {
   GanttData,
@@ -78,10 +78,10 @@ import {
   ColUnit,
   GanttMilestone,
   HoveringNode,
-} from '@/utils/types'
-import { isGroup, isMilestone, search } from '@/utils'
-import dayjs from '@/utils/day'
-import { DayData, getWeekdays, isRestDay } from '@/utils/weekday'
+} from '../utils/types.ts'
+import { isGroup, isMilestone, search } from '../utils/index.ts'
+import * as tidays from '../utils/tiday.js'
+import { DayData, getWeekdays, isRestDay } from '../utils/weekday.ts'
 
 const colUnitOptions = [
   {
@@ -136,6 +136,7 @@ function transform(
         gpcolor: d.gpcolor,
         x: xInDates - px,
         tip: d.tip,
+        colse: d.close,
         get y(): number {
           if (i === 0) return 0
           const { y, h } = layoutData[i - 1]
@@ -147,7 +148,7 @@ function transform(
             return h + item.h
           }, 1)
         },
-        w: dayjs.$duration(d.startDate, d.endDate),
+        w: tidays.duration(d.startDate, d.endDate),
         progress: d.progress,
         children: transform(d.children, dates, collapsedMap, xInDates),
       }
@@ -163,7 +164,7 @@ function transform(
       layoutData.push({
         ...base,
         colors: d.colors,
-        w: dayjs.$duration(d.startDate, d.endDate),
+        w: tidays.duration(d.startDate, d.endDate),
         h: 1,
         progress: d.progress,
       })
@@ -193,17 +194,17 @@ function getRange(data: GanttData, colUnit: ColUnit = ColUnit.Day) {
     if (Array.isArray(d)) {
       d.forEach(loop)
     } else if (isMilestone(d)) {
-      if (!startDate || dayjs(d.date).isBefore(startDate)) {
+      if (!startDate || tidays.isSameOrBefore(d.date, startDate)) {
         startDate = d.date
       }
-      if (!endDate || dayjs(d.date).isAfter(endDate)) {
+      if (!endDate || tidays.isSameOrAfter(d.date, endDate)) {
         endDate = d.date
       }
     } else {
-      if (!startDate || dayjs(d.startDate).isBefore(startDate)) {
+      if (!startDate || tidays.isSameOrBefore(d.startDate, startDate)) {
         startDate = d.startDate
       }
-      if (!endDate || dayjs(d.endDate).isAfter(endDate)) {
+      if (!endDate || tidays.isSameOrAfter(d.endDate, endDate)) {
         endDate = d.endDate
       }
       if (isGroup(d)) loop(d.children)
@@ -217,31 +218,20 @@ function getRange(data: GanttData, colUnit: ColUnit = ColUnit.Day) {
        * 起始总是从月初开始
        * 方便 month 视图数据处理
        */
-      startDate = dayjs(startDate)
-        .startOf('month')
-        .$format()
+      startDate = tidays.startOfMonth(startDate)
       /**
        * 末尾持续到几天后的月尾。同样是方便 month 视图处理
        * HACK: 这里和 gantt-milestone 组件还略有关系；因为该组件允许里程碑标题超出组件宽度限制，所以如果末尾留的位置不够，会导致 x-scroll-container 横向滚动出 bug
        */
-      endDate = dayjs(endDate)
-        .add(3, 'day')
-        .endOf('month')
-        .$format()
+      endDate = tidays.endOfMonth(tidays.dateAdd(endDate, 7))
       break
 
     default:
       /**
        * 理由同上
        */
-      startDate = dayjs(startDate)
-        .$day(1)
-        .$format()
-
-      endDate = dayjs(endDate)
-        .add(3, 'day')
-        .$day(7)
-        .$format()
+      startDate = tidays.dateAdd(startDate, -2)
+      endDate = tidays.dateAdd(endDate, 7)
       break
   }
 
@@ -255,40 +245,40 @@ function complementRange(range: string[], startDate: string, endDate: string) {
   if (range.length) {
     const oldStart = range[0]
     for (
-      let d = dayjs(oldStart).add(-1, 'day');
-      d.isSameOrAfter(startDate);
-      d = d.add(-1, 'day')
+      let d = tidays.dateAdd(oldStart, -1);
+      tidays.isSameOrAfter(d, startDate);
+      d = tidays.dateAdd(d, -1)
     ) {
-      range.unshift(d.$format())
+      range.unshift(d)
     }
     const oldEnd = range[range.length - 1]
     for (
-      let d = dayjs(oldEnd).add(1, 'day');
-      d.isSameOrBefore(endDate);
-      d = d.add(1, 'day')
+      let d = tidays.dateAdd(oldEnd, 1);
+      tidays.isSameOrBefore(d, endDate);
+      d = tidays.dateAdd(d, 1)
     ) {
-      range.push(d.$format())
+      range.push(d)
     }
   } else {
     for (
-      let d = dayjs(startDate);
-      d.isSameOrBefore(endDate);
-      d = d.add(1, 'day')
+      let d = startDate;
+      tidays.isSameOrBefore(d, endDate);
+      d = tidays.dateAdd(d, 1)
     ) {
-      range.push(d.$format())
+      range.push(d)
     }
   }
 }
 
-const today = dayjs().$format()
+const today = tidays.today()
 
 export default {
   name: 'GanttChart',
   components: { GanttLayout },
   filters: {
     formatDate(date: string) {
-      return dayjs(today).year() === dayjs(date).year()
-        ? dayjs(date).format('MM-DD')
+      return tidays.getYear(today) === tidays.getYear(date)
+        ? tidays.formatDate(date, 'MM-dd')
         : date
     },
   },
@@ -362,8 +352,8 @@ export default {
     },
     months(): string[] {
       const { dates } = this
-      const months = dates.map((d) => dayjs(d).format('YYYY-MM'))
-      const result = _uniq(months)
+      const months = dates.map((d) => tidays.formatDate(d, 'yyyy-MM'))
+      const result = uniq(months)
 
       return result
     },
@@ -406,35 +396,35 @@ export default {
       return (date: string) => this.today === date
     },
     isCurrentMonth(): (month: string) => boolean {
-      return (month: string) => dayjs(this.today).format('YYYY-MM') === month
+      return (month: string) => tidays.formatDate(this.today, 'yyyy-MM') === month
     },
     dragPosition(): Set<string> {
       const set = new Set<string>()
       if (this.dragData.node) {
         const { node, movedCols } = this.dragData
         if (isMilestone(node)) {
-          set.add(dayjs.$add(node.date, movedCols))
+          set.add(tidays.dateAdd(node.date, movedCols))
         } else {
           for (
-            let d = dayjs(node.startDate);
-            d.isSameOrBefore(node.endDate);
-            d = d.add(1, 'day')
+            let d = node.startDate;
+            tidays.isSameOrBefore(d, node.endDate);
+            d = tidays.dateAdd(d, 1)
           ) {
-            set.add(d.add(movedCols, 'day').$format())
+            set.add(tidays.dateAdd(d, movedCols, 'day'))
           }
         }
       } else if (this.resizeData.node) {
         const { node, resizedCols } = this.resizeData
         if (isMilestone(node)) {
-          set.add(dayjs.$add(node.date, resizedCols))
+          set.add(tidays.dateAdd(node.date, resizedCols))
         } else {
-          const endDate = dayjs.$add(node.endDate, resizedCols)
+          const endDate = tidays.dateAdd(node.endDate, resizedCols)
           for (
-            let d = dayjs(node.startDate);
-            d.isSameOrBefore(endDate);
-            d = d.add(1, 'day')
+            let d = node.startDate;
+            tidays.isSameOrBefore(d, endDate);
+            d = tidays.dateAdd(d, 1)
           ) {
-            set.add(d.$format())
+            set.add(d)
           }
         }
       }
@@ -471,9 +461,15 @@ export default {
     dates: {
       handler(range: string[]) {
         // FIXME: 持续时间不会跨三年吧
-        const startYear = dayjs(range[0]).year() // undefined 则是今年
+        let startYear = tidays.getYear(range[0]) // undefined 则是今年
+        if (!startYear) {
+          startYear = tidays.getYear(today);
+        }
         this.getWeekdays(startYear)
-        const endYear = dayjs(range[range.length - 1]).year()
+        let endYear = tidays.getYear(range[range.length - 1])
+        if (!endYear) {
+          endYear = tidays.getYear(today);
+        }
         this.getWeekdays(endYear)
       },
       immediate: true,
@@ -572,10 +568,10 @@ export default {
 
         const date = this.hoveringNode.date
 
-        date.start = dayjs.$add(this.hoveringNode.originDate.start, movedCols)
+        date.start = tidays.dateAdd(this.hoveringNode.originDate.start, movedCols)
 
         if (!this.hoveringNode.isMilestone) {
-          date.end = dayjs.$add(this.hoveringNode.originDate.end, movedCols)
+          date.end = tidays.dateAdd(this.hoveringNode.originDate.end, movedCols)
         }
 
         const width = dataInPx.w < minWidth ? minWidth : dataInPx.w
@@ -605,12 +601,9 @@ export default {
         const date = this.hoveringNode.date
 
         if (this.hoveringNode.isMilestone) {
-          date.start = dayjs.$add(
-            this.hoveringNode.originDate.start,
-            resizedCols,
-          )
+          date.start = tidays.dateAdd(this.hoveringNode.originDate.start, resizedCols)
         } else {
-          date.end = dayjs.$add(this.hoveringNode.originDate.end, resizedCols)
+          date.end = tidays.dateAdd(this.hoveringNode.originDate.end, resizedCols)
         }
 
         this.hoveringNode = {
@@ -631,6 +624,13 @@ export default {
     })
   },
   methods: {
+    onDrop(day) {
+      this.$emit('dropOnDay', day)
+    },
+    onDragOver(event, item) {
+      event.preventDefault();
+    },
+
     complementDates() {
       const { data } = this
       if (!data.length) return
@@ -648,7 +648,7 @@ export default {
       switch (this.colUnit) {
         case ColUnit.Week: {
           const map = ['日', '一', '二', '三', '四', '五', '六']
-          return map[dayjs(date).day()]
+          return map[tidays.getWeekDay(date)]
         }
         case ColUnit.Day:
         default:
@@ -659,11 +659,16 @@ export default {
       this.$emit('update:scrollTop', e.target.scrollTop)
     },
     async getWeekdays(year: number | string) {
+      let days = await getWeekdays(year)
+      if (typeof days === 'string') {
+        days = JSON.parse(days);
+      }
+
       if (this.years.has(year)) return
       try {
         this.weekdays = {
           ...this.weekdays,
-          ...(await getWeekdays(year)),
+          ...days,
         }
         this.years.add(year)
       } catch (error) {

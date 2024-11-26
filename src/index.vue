@@ -1,19 +1,21 @@
 <template>
   <div class="v-gantt">
     <gantt-tree :data="ganttData" :bus="bus" :scroll-top.sync="scrollTop" @delete="onDelete" @move="onMove"
-      :treeAttrs="treeAttrs">
+      @onNodeClick="onNodeClick" :treeAttrs="treeAttrs">
       <!--@slot 左侧树 header -->
-      <slot slot="header" name="tree-header"></slot>
+      <template #header>
+        <slot name="tree-header"></slot>
+      </template>
+
     </gantt-tree>
     <gantt-chart :data="ganttData" :bus="bus" :scroll-top.sync="scrollTop" :drag-data="dragData" :resize-data="resizeData"
-      :option="option" />
+      :option="option" @dropOnDay="dropOnDay" />
   </div>
 </template>
 <script lang="ts">
-import { createApp, PropType } from 'vue'
-import * as Vue from 'vue'
-import _clonedeep from 'lodash.clonedeep'
-import dayjs from './utils/day'
+import { PropType } from 'vue'
+import { cloneDeep } from 'lodash'
+import * as tidays from './utils/tiday.js'
 import GanttTree from './components/gantt-tree.vue'
 import GanttChart from './components/gantt-chart.vue'
 import {
@@ -30,15 +32,15 @@ import {
   GanttPropMilestone,
   GanttMilestone,
   ColUnit,
-} from '@/utils/types'
+} from './utils/types.ts'
 import {
   isGroup,
   search,
   transformGroupToItem,
   transformItemToGroup,
   isMilestone,
-} from '@/utils'
-import EventEmitter from '@/utils/event-emitter'
+} from './utils/index.ts'
+import EventEmitter from './utils/event-emitter.ts'
 
 function transform(data: GanttPropData): GanttData {
 
@@ -63,31 +65,25 @@ function transformGroup(g: GanttPropGroup): GanttGroup {
     name: g.name,
     gpcolor: g.gpcolor,
     tip: g.tip,
+    colse: g.close,
     children: transform(g.children),
     get startDate() {
       return this.children.reduce((result, c) => {
         const startDate = isMilestone(c) ? c.date : c.startDate
-        return !result || dayjs(startDate).isBefore(result) ? startDate : result
+        return !result || tidays.isSameOrBefore(startDate, result) ? startDate : result
       }, '')
     },
     get endDate() {
       return this.children.reduce((result, c) => {
         const endDate = isMilestone(c) ? c.date : c.endDate
-        return !result || dayjs(endDate).isAfter(result) ? endDate : result
+        return !result || tidays.isSameOrAfter(endDate, result) ? endDate : result
       }, '')
     },
     get progress() {
       let finished = 0
       let total = 0
-      // this.children.forEach((c) => {
-      //   if (isMilestone(c)) return
-      //   const duration = dayjs.$duration(c.startDate, c.endDate)
-      //   finished += duration * c.progress
-      //   total += duration
-      // })
       this.children.forEach((c) => {
         if (isMilestone(c)) return
-        const duration = dayjs.$duration(c.startDate, c.endDate)
         finished += c.progress
         total += 100
       })
@@ -104,7 +100,7 @@ function getCollapsedMap(data: GanttPropData): CollapsedMap {
   const map: CollapsedMap = {}
   const loop = (data: GanttPropData) => {
     data.forEach((d) => {
-      map[d.id] = false
+      map[d.id] = d.close;
       if (isGroup(d)) loop(d.children)
     })
   }
@@ -225,8 +221,11 @@ export default {
     this.initBus()
   },
   methods: {
+    dropOnDay(day) {
+      this.$emit('dropOnDay', day)
+    },
     setData(data: GanttPropData) {
-      this.data = data
+      this.data = data;
     },
     initBus() {
       Object.assign(this.bus, {
@@ -249,7 +248,7 @@ export default {
       ee.on(ee.Event.ResizeEnd, this.onResizeEnd)
     },
     onDelete({ id, done }: { id: GanttPropNode['id']; done: Function }) {
-      const newData = _clonedeep(this.data)
+      const newData = cloneDeep(this.data)
       // 找到该节点和其父节点
       const [node, parent] = search(id, newData) as [
         GanttPropNode,
@@ -291,6 +290,9 @@ export default {
         root.splice(i, 1)
       }
     },
+    onNodeClick(node: GanttPropNode) {
+      this.$emit('node-click', node)
+    },
     /**
      * 在 tree 里发生的拖拽事件。
      * 处于停用状态，启用时要重新梳理逻辑
@@ -306,7 +308,7 @@ export default {
       index: number
       done: Function
     }) {
-      const newData = _clonedeep(this.data)
+      const newData = cloneDeep(this.data)
       const [node, oldParent] = search(id, newData) as [
         GanttPropNode,
         GanttPropGroup?,
@@ -352,16 +354,16 @@ export default {
       this.dragData.node = null
       this.dragData.movedCols = 0
       if (!node || !movedCols) return
-      const newData = _clonedeep(this.data)
+      const newData = cloneDeep(this.data)
       const [root] = search(node.id, newData) as [GanttPropNode]
       function loop(n: GanttPropNode) {
         if (isGroup(n)) {
           n.children.forEach(loop)
         } else if (isMilestone(n)) {
-          n.date = dayjs.$add(n.date, movedCols)
+          n.date = tidays.dateAdd(n.date, movedCols);
         } else {
-          n.startDate = dayjs.$add(n.startDate, movedCols)
-          n.endDate = dayjs.$add(n.endDate, movedCols)
+          n.startDate = tidays.dateAdd(n.startDate, movedCols)
+          n.endDate = tidays.dateAdd(n.endDate, movedCols)
         }
       }
       loop(root)
@@ -386,9 +388,9 @@ export default {
       this.resizeData.node = null
       this.resizeData.resizedCols = 0
       if (!node || !resizedCols) return
-      const newData = _clonedeep(this.data)
+      const newData = cloneDeep(this.data)
       const [root] = search(node.id, newData) as [GanttPropItem]
-      root.endDate = dayjs.$add(root.endDate, resizedCols)
+      root.endDate = tidays.dateAdd(root.endDate, resizedCols)
 
       this.$emit('update:data', newData)
       this.data = newData;

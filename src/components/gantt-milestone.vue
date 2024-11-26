@@ -13,7 +13,7 @@
 <script lang="ts">
 import { createApp, PropType } from 'vue'
 import * as Vue from 'vue'
-import { GanttLayoutMilestone } from '@/utils/types'
+import { GanttLayoutMilestone } from '../utils/types.ts'
 
 export default {
   name: 'GanttMilestone',

@@ -3,8 +3,7 @@
     v-bind="$attrs" :color="colors" />
 </template>
 <script lang="ts">
-import { createApp, PropType } from 'vue'
-import * as Vue from 'vue'
+import { PropType } from 'vue'
 export default {
   name: 'GanttProgress',
   props: {

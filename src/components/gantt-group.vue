@@ -1,10 +1,13 @@
 <template>
   <div class="gantt-group">
-    <div class="self-content" :style="contentStyle" @mousedown.stop="$emit('drag-start', $event)"
-      @click.stop="$emit('focus-start')" @mouseover.stop="$emit('hover-start')" @mouseout.stop="$emit('hover-end')">
-      <gantt-progress :progress="data.progress" type="group" :colors="[{ 'color': data.gpcolor, 'percentage': 100 }]"
-        :tip="data.tip" />
-    </div>
+    <el-tooltip :show-after="1000" placement="top-start">
+      <template #content><span v-html="data.tip.content"></span></template>
+      <div class="self-content" :style="contentStyle" @mousedown.stop="$emit('drag-start', $event)"
+        @click.stop="$emit('focus-start')" @mouseover.stop="$emit('hover-start')" @mouseout.stop="$emit('hover-end')">
+        <gantt-progress :progress="data.progress" type="group" :colors="[{ 'color': data.gpcolor, 'percentage': 100 }]"
+          :tip="data.tip" />
+      </div>
+    </el-tooltip>
     <transition>
       <div v-show="showChildren">
         <gantt-layout :data="data.children" :bus="bus" />
@@ -14,7 +17,7 @@
 </template>
 <script lang="ts">
 import { PropType } from 'vue'
-import { GanttLayoutGroup, Bus } from '@/utils/types'
+import { GanttLayoutGroup, Bus } from '../utils/types.ts'
 import GanttProgress from './gantt-progress.vue'
 import GanttLeaf from './gantt-leaf.vue'
 

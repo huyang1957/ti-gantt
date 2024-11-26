@@ -11,12 +11,18 @@ const data = ref([
     id: 'group-1',
     name: 'GN20241015001A001',
     gpcolor: '#5cb87a',
+    close: false,
+    tip: {
+      show: true,
+      content: '<span style="color:red">叶节点1111111111111</span><br>-2---',
+      placement: 'bottom-start'
+    },
     children: [
       {
         id: 'item-1',
         name: '下料',
         progress: 70,
-        startDate: d('05'),
+        startDate: d('06'),
         endDate: d('07'),
         colors: [
           { color: '#f56c6c', percentage: 20 },
@@ -70,22 +76,11 @@ const data = ref([
         }
       },
     ],
-    tip: {
-      content: 'aaa'
-    }
   },
 ]);
 
 const treeAttrs = {
   draggable: true,
-}
-
-function dragged(e) {
-  // console.log('e', e);
-}
-
-function resized(e) {
-  // console.log('e', e);
 }
 
 const refgantt = ref();
@@ -102,12 +97,15 @@ onMounted(() => {
 
 <template>
   <div id="app">
-    <v-gantt ref="refgantt" style="height: 400px;" :tree-attrs="treeAttrs" :view.sync="view" :option="option"
-      @dragged="dragged" @resized="resized">
-      <div slot="tree-header">
-        <h5 style="margin: 0">生产计划图</h5>
-      </div>
-    </v-gantt>
+    <div style="width: 100%;height: 200px;">
+      <div style="width: 100px;height: 200px;background-color:red;" :draggable="true"
+        @dragstart="onDragStart($event, 'input')"></div>
+      <v-gantt ref="refgantt" style="height: 400px;" :tree-attrs="treeAttrs" :view.sync="view" :option="option">
+        <template #tree-header>
+          <div style="margin: 0;font-size: 20px;width:100%;text-align:center;line-height: 50px;">生产计划图</div>
+        </template>
+      </v-gantt>
+    </div>
   </div>
 </template>
 

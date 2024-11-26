@@ -1,4 +1,3 @@
-import store from 'store2'
 import {
   BaseGroup,
   BaseMilestone,
@@ -6,7 +5,7 @@ import {
   GanttPropGroup,
   GanttGroup,
   GanttPropItem,
-} from '@/utils/types'
+} from './types.ts'
 
 /**
  * 判断是否是群组节点（不支持空群组节点）
@@ -72,13 +71,14 @@ export function cachedAsync<T extends Function>(func: T) {
   const promises: { [key: string]: Promise<any> } = {}
   return (function(this: any, ...args: any[]) {
     const key = JSON.stringify(args)
-    if (store.has(key)) {
-      return store.get(key)
+    let value = localStorage.getItem(key);
+    if (value) {
+      return value
     } else if (promises[key]) {
       return promises[key]
     } else {
       promises[key] = func.apply(this, args).then((v: any) => {
-        store.set(key, v)
+        localStorage.setItem(key, v)
         delete promises[key]
         return v
       })

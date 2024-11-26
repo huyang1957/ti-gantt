@@ -11,6 +11,13 @@ export default defineConfig({
     },
   },
   plugins: [vue()],
+  optimizeDeps: {
+    include: [
+      'dayjs',
+      'dayjs/plugin/isSameOrAfter',
+      'dayjs/plugin/isSameOrBefore',
+    ],
+  },
   resolve: {
     alias: {
       "@": pathSrc,

@@ -1,5 +1,5 @@
 <template>
-  <div class="gantt-tree">
+  <div class="gantt-tree" style="resize: both;overflow: auto;">
     <header>
       <slot name="header"></slot>
     </header>
@@ -7,11 +7,15 @@
       <!-- TODO: draggable -->
       <el-tree ref="tree" v-loading="dragging" :data="treeData" :expand-on-click-node="false" node-key="id"
         @node-expand="onNodeExpand" @node-collapse="onNodeCollapse" @node-drop="onDrop" @node-click="onNodeClick"
-        v-bind="treeAttrs">
+        v-bind="treeAttrs" highlight-current>
         <template v-slot="{ data: d }">
           <div class="tree-node el-tree-node__label">
             <div v-if="isMilestone(d)" :class="['milestone-mark', { done: d.done }]"></div>
-            <span class="name ellipsis" :title="d.name">{{ d.name }}</span>
+            <el-tooltip :show-after="1000" placement="top-start">
+              <template #content><span v-html="getTips(d)"></span></template>
+              <span class="name ellipsis" :title="d.name">{{ d.name }}</span>
+
+            </el-tooltip>
             <!-- FIXME: 暂时隐藏进度和操作 -->
             <span class="progress">{{ progressStr(d.progress) }}</span>
             <el-link class="delete" type="danger" :underline="false" @click="onDelete(d)">删除</el-link>
@@ -22,8 +26,7 @@
   </div>
 </template>
 <script lang="ts">
-import { PropType, createApp } from 'vue'
-import * as Vue from 'vue'
+import { PropType } from 'vue'
 import {
   BaseItem,
   GanttData,
@@ -31,8 +34,8 @@ import {
   GanttItem,
   Bus,
   BaseMilestone,
-} from '@/utils/types'
-import { isGroup, search, isMilestone } from '@/utils'
+} from '../utils/types.ts'
+import { isGroup, search, isMilestone } from '../utils/index.ts'
 
 // REVIEW: 可能要抽离 Milestone 节点类型，才好进一步拓展功能
 interface TreeNode extends BaseItem {
@@ -49,6 +52,7 @@ function transform(item: GanttNode): TreeNode {
   const base = {
     id: item.id,
     name: item.name,
+    tip: item.tip,
   }
   if (isGroup(item)) {
     return {
@@ -118,6 +122,9 @@ export default {
     },
   },
   methods: {
+    getTips(node: any) {
+      return node.tip.content;
+    },
     isMilestone,
     progressStr(progress: number) {
       if (!progress) {
@@ -174,7 +181,6 @@ export default {
     notifyMovement(id: GanttNode['id'], done: Function) {
       const [node, parent] = search(id, this.treeData) as [TreeNode, TreeNode?]
       const index = (parent ? parent.children! : this.treeData).indexOf(node)
-      // console.log(node, oldParent, parent)
       this.$emit('move', {
         id: node.id,
         pid: parent ? parent.id : undefined,
@@ -188,6 +194,7 @@ export default {
     onNodeClick(node: TreeNode) {
       const { ee } = this.bus
       ee.emit(ee.Event.ScrollToNode, node.id)
+      this.$emit('onNodeClick', node);
     },
   },
 }
